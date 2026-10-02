@@ -1,0 +1,71 @@
+[project]
+name = "indexpulse"
+version = "0.1.0"
+description = "A changelog-fed search index that never serves a superseded or deleted document version, audited under worker crashes and compaction."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [{ name = "Rajeev Chaurasia", email = "rajeevchaurasia.dev@gmail.com" }]
+dependencies = [
+    "confluent-kafka>=2.6",
+    "hnswlib>=0.8",
+    "numpy>=2.0",
+    "pydantic>=2.8",
+    "rocksdict>=0.3.29",
+    "typer>=0.12",
+]
+
+[project.scripts]
+indexpulse = "indexpulse.cli:app"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.11",
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/indexpulse"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests", "bench", "script"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+# bench/, script/ and tests/ are imported as packages from the repository root
+# but are neither installed nor under src, so isort would otherwise file them
+# as third party.
+known-first-party = ["indexpulse", "bench", "script", "tests"]
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["src", "tests", "script", "bench"]
+
+[[tool.mypy.overrides]]
+# Neither ships type information: hnswlib is a pybind11 extension and rocksdict
+# is a Rust extension.
+module = ["hnswlib", "rocksdict", "confluent_kafka.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src/indexpulse"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_also = [
+    "if __name__ == .__main__.:",
+]

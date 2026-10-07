@@ -78,27 +78,44 @@ class Searcher:
         if manifest.generation == self._generation:
             return False
 
-        wanted = {ref.segment_id: ref for ref in manifest.segments}
-        for segment_id in list(self._segments):
-            if segment_id not in wanted:
-                del self._segments[segment_id]
-        for segment_id, ref in wanted.items():
-            if segment_id in self._segments:
+        # Built to one side and swapped in by rebinding, so reader threads
+        # calling search() never observe a half-updated segment set and need no
+        # lock to be safe against this one.
+        loaded: dict[str, LoadedSegment] = {}
+        for ref in manifest.segments:
+            cached = self._segments.get(ref.segment_id)
+            if cached is not None:
+                loaded[ref.segment_id] = cached
                 continue
             try:
-                self._segments[segment_id] = LoadedSegment(self.root, ref, self.ef_search)
+                loaded[ref.segment_id] = LoadedSegment(self.root, ref, self.ef_search)
             except FileNotFoundError:
-                # A segment named by the manifest has already been deleted,
-                # which only happens when retirement skips the grace period.
+                # A segment the manifest names has already been deleted, which
+                # only happens when retirement skips the grace period.
                 self.missing_segment_reads += 1
 
+        self._segments = loaded
         self._generation = manifest.generation
         return True
 
+    def indexed_versions(self) -> set[tuple[int, int]]:
+        """Every document version the live segments can answer for.
+
+        The audit compares this against the store to count revisions that were
+        applied but never reached a segment, which is a loss a query-based
+        check could only guess at.
+        """
+        held: set[tuple[int, int]] = set()
+        for segment in self._segments.values():
+            for doc_id, version in segment.identity:
+                held.add((int(doc_id), int(version)))
+        return held
+
     def search(self, query: np.ndarray, k: int = 10) -> SearchResult:
         depth = max(k * 4, k + 32)
+        segments = self._segments
         candidates: list[Hit] = []
-        for segment in self._segments.values():
+        for segment in segments.values():
             candidates.extend(segment.search(query, depth))
         candidates.sort(key=lambda hit: hit.distance)
 
@@ -106,7 +123,7 @@ class Searcher:
             return SearchResult(
                 hits=self._best_per_document(candidates)[:k],
                 generation=self._generation,
-                segments_searched=len(self._segments),
+                segments_searched=len(segments),
             )
 
         rejected: dict[Rejection, int] = {}
@@ -123,7 +140,7 @@ class Searcher:
         return SearchResult(
             hits=self._best_per_document(kept)[:k],
             generation=self._generation,
-            segments_searched=len(self._segments),
+            segments_searched=len(segments),
             rejected=rejected,
         )
 

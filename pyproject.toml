@@ -52,9 +52,10 @@ plugins = ["pydantic.mypy"]
 files = ["src", "tests", "script", "bench"]
 
 [[tool.mypy.overrides]]
-# Neither ships type information: hnswlib is a pybind11 extension and rocksdict
-# is a Rust extension.
-module = ["hnswlib", "rocksdict", "confluent_kafka.*"]
+# hnswlib is a pybind11 extension and rocksdict is a Rust extension, neither
+# of which ships type information. The confluent-kafka stubs are incomplete
+# rather than absent, and re-exports they omit are not worth working around.
+module = ["hnswlib", "rocksdict", "confluent_kafka", "confluent_kafka.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

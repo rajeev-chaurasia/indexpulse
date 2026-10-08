@@ -66,9 +66,20 @@ calls it:
    `(document id, revision, operation, published at)`, independent of the index.
 3. The auditor replays that log to reconstruct, for each document, the intervals
    during which each revision was the authoritative one.
-4. A served hit is stale if its revision was not authoritative at the instant it
-   was served, with the clock skew between publisher and searcher accounted for
-   as a stated tolerance rather than ignored.
+4. A served hit is stale if a newer revision of that document entered the
+   changelog more than the tolerance before the hit was served.
+
+The tolerance is fixed at 12 seconds, the same number as the freshness threshold
+above, and it is what makes the claim a promise rather than a tautology. An
+index is allowed to take time to catch up; what it is not allowed to do is still
+be serving old content once that time has passed. Stating it this way means the
+staleness count and the freshness number cannot both be met by a system that
+quietly redefines either.
+
+The strictest possible reading, a tolerance of zero, is reported alongside it.
+Hits that fail only at zero tolerance were served while the edit was still in
+flight, which the claim permits, and they are published as a separate figure
+rather than folded into the staleness count or left out.
 
 The auditor shares no code with the search path. It is given the raw records and
 recomputes the verdict from the changelog alone.

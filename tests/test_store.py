@@ -7,27 +7,57 @@ from indexpulse.store import DocumentStore
 from tests.conftest import revision
 
 
-def test_apply_returns_only_what_took_effect(store: DocumentStore) -> None:
-    accepted, ignored = store.apply([revision(1, 1), revision(2, 1)])
-    assert len(accepted) == 2
+def test_apply_returns_the_revisions_now_current(store: DocumentStore) -> None:
+    current, ignored = store.apply([revision(1, 1), revision(2, 1)])
+    assert sorted(rev.doc_id for rev in current) == [1, 2]
     assert ignored == 0
 
 
-def test_replayed_batch_is_idempotent(store: DocumentStore) -> None:
+def test_a_replayed_revision_is_still_reported_as_current(store: DocumentStore) -> None:
+    """A worker killed before sealing must index these again on replay.
+
+    The store already holds them, so nothing advances, but their vectors may
+    never have reached a segment. Reporting only what advanced is what lost
+    twenty two revisions in the first smoke run.
+    """
     batch = [revision(1, 1), revision(2, 1)]
     store.apply(batch)
-    accepted, ignored = store.apply(batch)
-    assert accepted == []
+    current, ignored = store.apply(batch)
+    assert sorted(rev.doc_id for rev in current) == [1, 2]
     assert ignored == 2
 
 
+def test_a_replayed_revision_that_is_no_longer_current_is_not_reported(
+    store: DocumentStore,
+) -> None:
+    """Indexing a superseded version again would only add work for compaction."""
+    store.apply([revision(1, 1)])
+    store.apply([revision(1, 2)])
+    current, ignored = store.apply([revision(1, 1)])
+    assert current == []
+    assert ignored == 1
+
+
+def test_a_replayed_delete_is_not_reported_as_current(store: DocumentStore) -> None:
+    store.apply([revision(1, 1)])
+    store.apply([revision(1, 2, delete=True)])
+    current, ignored = store.apply([revision(1, 2, delete=True)])
+    assert current == []
+    assert ignored == 1
+
+
 def test_two_revisions_of_one_document_resolve_inside_a_batch(store: DocumentStore) -> None:
-    """Without carrying state forward, the second would be graded against disk."""
-    accepted, ignored = store.apply([revision(1, 1), revision(1, 2)])
-    assert [rev.version for rev in accepted] == [1, 2]
+    """Only the later one needs a vector, and the earlier must not get one."""
+    current, ignored = store.apply([revision(1, 1), revision(1, 2)])
+    assert [rev.version for rev in current] == [2]
     assert ignored == 0
     state = store.get(1)
     assert state is not None and state.version == 2
+
+
+def test_a_delete_later_in_a_batch_withdraws_the_upsert(store: DocumentStore) -> None:
+    current, _ = store.apply([revision(1, 1), revision(1, 2, delete=True)])
+    assert current == []
 
 
 def test_out_of_order_revisions_do_not_move_a_document_backwards(store: DocumentStore) -> None:

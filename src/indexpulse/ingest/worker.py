@@ -31,7 +31,7 @@ from pathlib import Path
 
 import numpy as np
 
-from indexpulse.core import Manifest, Operation, Revision, Safety, SegmentKind, content_vector
+from indexpulse.core import Manifest, Revision, Safety, SegmentKind, content_vector
 from indexpulse.core.content import topic_basis
 from indexpulse.index.compactor import compact, needs_compaction
 from indexpulse.index.manifest_store import ManifestStore
@@ -124,16 +124,14 @@ class IngestWorker:
             return 0
 
         revisions = [revision for _, _, revision in records]
-        accepted, ignored = self.store.apply(revisions)
-        self._applied += len(accepted)
+        current, ignored = self.store.apply(revisions)
+        self._applied += len(current)
         self._ignored += ignored
 
-        for revision in accepted:
-            if revision.operation is Operation.DELETE:
-                # A delete adds no vector. The store now says the document is
-                # gone, which is enough to keep every older vector of it out of
-                # a result, and compaction is what eventually removes them.
-                continue
+        # Deletes never come back from apply. A delete adds no vector, and the
+        # store saying the page is gone already keeps every older vector of it
+        # out of a result; compaction is what eventually removes them.
+        for revision in current:
             self._pending.add(
                 revision.doc_id,
                 revision.version,
@@ -257,15 +255,15 @@ def seed_corpus(
     manifests = ManifestStore(config.root, safety or Safety())
     basis = topic_basis(config.dim)
     with DocumentStore(config.store_path) as store:
-        accepted, _ = store.apply(revisions)
+        current, _ = store.apply(revisions)
         store.flush()
-        vectors = np.vstack([content_vector(r.content, config.dim, basis) for r in accepted])
+        vectors = np.vstack([content_vector(r.content, config.dim, basis) for r in current])
         ref = write_segment(
             manifests.root,
             f"base-{uuid.uuid4().hex[:12]}",
             vectors=vectors,
-            doc_ids=np.array([r.doc_id for r in accepted], dtype=np.uint64),
-            versions=np.array([r.version for r in accepted], dtype=np.uint64),
+            doc_ids=np.array([r.doc_id for r in current], dtype=np.uint64),
+            versions=np.array([r.version for r in current], dtype=np.uint64),
             kind=SegmentKind.BASE,
             published_at=time.time(),
             threads=config.threads,

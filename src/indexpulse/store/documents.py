@@ -80,12 +80,19 @@ class DocumentStore:
         return [None if raw is None else DocumentState.from_bytes(raw) for raw in raws]
 
     def apply(self, revisions: Sequence[Revision]) -> tuple[list[Revision], int]:
-        """Fold a run of revisions in, returning the ones that took effect.
+        """Fold a run of revisions in, returning the ones now current.
 
-        Revisions that lost to a newer version already in the store are counted
-        and dropped. After a crash the replay re-delivers a stretch of the
-        changelog, and that count is how the benchmark shows replay was in fact
-        idempotent rather than merely assumed to be.
+        Returning what is current rather than what moved the store forward is
+        the difference between an index that survives a replay and one that
+        quietly loses a page. After a kill the changelog is re-read from the
+        manifest position, so revisions the store already holds arrive a second
+        time. They advance nothing, but their vectors may never have reached a
+        segment before the worker died, and the caller indexing them again is
+        the only thing that puts that right.
+
+        The second return value counts revisions that did not advance the
+        store, which is how a run shows that replay happened and was harmless
+        rather than merely assuming it.
         """
         if not revisions:
             return [], 0
@@ -95,22 +102,30 @@ class DocumentStore:
         batch = WriteBatch()
         batch.set_dumps(lambda value: value)
 
-        accepted: list[Revision] = []
+        # One entry per document, because a batch holding two revisions of the
+        # same page should index the later one and not both.
+        live: dict[int, Revision] = {}
         ignored = 0
         for revision in revisions:
             state = apply_revision(current.get(revision.doc_id), revision)
             if state is None:
                 ignored += 1
+                held = current.get(revision.doc_id)
+                if held is not None and held.version == revision.version and not held.deleted:
+                    live[revision.doc_id] = revision
                 continue
             # Carried forward so two revisions of one document inside a single
             # batch resolve against each other, not against what was on disk
             # before the batch started.
             current[revision.doc_id] = state
             batch.put(document_key(state.doc_id), state.to_bytes())
-            accepted.append(revision)
+            if state.deleted:
+                live.pop(revision.doc_id, None)
+            else:
+                live[revision.doc_id] = revision
 
         self._db.write(batch)
-        return accepted, ignored
+        return list(live.values()), ignored
 
     def seed(self, states: Iterable[DocumentState], batch_size: int = 50_000) -> int:
         """Load the initial corpus without the read-modify-write above.

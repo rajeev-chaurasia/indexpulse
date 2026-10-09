@@ -65,6 +65,10 @@ def compact(
     kept_vectors: list[np.ndarray] = []
     kept_ids: list[int] = []
     kept_versions: list[int] = []
+    # Replay can index one revision twice, into two different segments. Both
+    # copies are current and both would survive the filter, so the duplicate is
+    # dropped here rather than being carried forward for the life of the index.
+    seen: set[tuple[int, int]] = set()
     dropped = 0
 
     for ref in chosen:
@@ -78,9 +82,11 @@ def compact(
         for label, (doc_id, version, state) in enumerate(
             zip(doc_ids, versions, states, strict=True)
         ):
-            if classify(int(version), state) is not None:
+            pair = (int(doc_id), int(version))
+            if classify(int(version), state) is not None or pair in seen:
                 dropped += 1
                 continue
+            seen.add(pair)
             live_labels.append(label)
             kept_ids.append(int(doc_id))
             kept_versions.append(int(version))

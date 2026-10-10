@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+
+      # A step rather than a service container, because the broker needs a
+      # settled advertised listener before anything connects and a service gets
+      # no chance to wait for one.
+      - name: Start the broker
+        run: |
+          docker compose up -d --wait
+          docker compose ps
+
+      - run: uv sync --all-groups
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+      - run: ruby script/check_prose.rb
+      - run: uv run python script/check_layers.py
+      - run: uv run pytest --cov --cov-report=term-missing
+
+      # The whole path, broker to audit, at a scale that fits in a CI minute.
+      # It proves the harness still runs; it does not produce evidence.
+      - run: uv run python -m bench --scale smoke --evidence /tmp/smoke-evidence
+
+      # Recomputes every published number from the raw records beside it. The
+      # slowest step, and the one the README depends on.
+      - run: uv run python script/validate_evidence.py

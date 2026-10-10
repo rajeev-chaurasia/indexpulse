@@ -63,7 +63,10 @@ class RunSpec:
     kills: int = 60
     publish_rate: float = 300.0
     probe_every: int = 60
-    refresh_interval: float = 0.2
+    # Polled often enough that a reader actually meets a manifest being
+    # rewritten in place. At a fifth of a second the unsafe swap's race is
+    # too narrow to sample, and the control would read as a pass.
+    refresh_interval: float = 0.05
     drain_timeout: float = 900.0
     seal_size: int = 2000
     seal_interval: float = 1.0

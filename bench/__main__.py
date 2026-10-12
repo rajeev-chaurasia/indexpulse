@@ -59,6 +59,12 @@ def main() -> int:
     parser.add_argument("--evidence", type=Path, default=Path("evidence"))
     parser.add_argument("--work", type=Path, default=Path("var"))
     parser.add_argument("--bootstrap", default="localhost:9092")
+    parser.add_argument(
+        "--publish-rate",
+        type=float,
+        default=None,
+        help="Revisions per second, overriding the scale default.",
+    )
     parser.add_argument("--keep-work", action="store_true")
     args = parser.parse_args()
 
@@ -86,7 +92,7 @@ def main() -> int:
         bootstrap=args.bootstrap,
         readers=scale.readers,
         kills=scale.kills,
-        publish_rate=scale.publish_rate,
+        publish_rate=args.publish_rate or scale.publish_rate,
         probe_every=scale.probe_every,
         seal_size=scale.seal_size,
     )

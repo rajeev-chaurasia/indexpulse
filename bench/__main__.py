@@ -12,7 +12,7 @@ import json
 import shutil
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from bench.audit import audit
@@ -65,10 +65,19 @@ def main() -> int:
         default=None,
         help="Revisions per second, overriding the scale default.",
     )
+    parser.add_argument(
+        "--revisions",
+        type=int,
+        default=None,
+        help="Revisions to publish, overriding the scale default.",
+    )
     parser.add_argument("--keep-work", action="store_true")
     args = parser.parse_args()
 
     scale = SCALES[args.scale]
+    corpus = scale.corpus
+    if args.revisions:
+        corpus = replace(corpus, revisions=args.revisions)
     safety = parse_safety(args.unsafe)
     label = args.name or (
         f"{args.scale}-" + ("-".join(safety.disabled_names) if safety.disabled_names else "safe")
@@ -86,7 +95,7 @@ def main() -> int:
         out=out,
         root=work / "index",
         store_path=work / "docs",
-        corpus=scale.corpus,
+        corpus=corpus,
         safety=safety,
         topic=f"indexpulse-{label}-{uuid.uuid4().hex[:6]}",
         bootstrap=args.bootstrap,

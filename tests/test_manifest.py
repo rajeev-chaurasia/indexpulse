@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 
 from indexpulse.core import Manifest, Safety, SegmentKind, SegmentRef
@@ -73,3 +74,51 @@ def test_without_the_atomic_swap_retirement_is_immediate(tmp_path: Path) -> None
     (tmp_path / "old.npy").write_bytes(b"x")
     store.publish(Manifest(generation=0), retired=["old"])
     assert not (tmp_path / "old.hnsw").exists()
+
+
+def publish_repeatedly(store: ManifestStore, rounds: int, stop: threading.Event) -> None:
+    manifest = Manifest(generation=0)
+    for _ in range(rounds):
+        if stop.is_set():
+            return
+        manifest = manifest.advanced(
+            segments=tuple(ref(f"s{index}") for index in range(12)),
+            offsets={0: manifest.generation},
+            written_at=0.0,
+        )
+        store.publish(manifest)
+
+
+def count_torn_reads(store: ManifestStore, rounds: int) -> int:
+    """Read the manifest continuously while it is being republished."""
+    stop = threading.Event()
+    writer = threading.Thread(target=publish_repeatedly, args=(store, rounds, stop))
+    torn = 0
+    writer.start()
+    try:
+        while writer.is_alive():
+            try:
+                store.load()
+            except TornManifest:
+                torn += 1
+    finally:
+        stop.set()
+        writer.join()
+    return torn
+
+
+def test_overwriting_in_place_is_observably_not_atomic(tmp_path: Path) -> None:
+    """The failure the atomic swap exists to prevent, shown rather than asserted.
+
+    A measured run only catches this race if it happens to sample the few
+    milliseconds the file is half written, so the control can come back clean
+    from a short run and say nothing. This does not depend on that luck.
+    """
+    store = ManifestStore(tmp_path, Safety(atomic_swap=False))
+    assert count_torn_reads(store, rounds=60) > 0
+
+
+def test_renaming_over_the_manifest_never_tears(tmp_path: Path) -> None:
+    """The same workload with the swap on, which is what makes the pair mean anything."""
+    store = ManifestStore(tmp_path, Safety())
+    assert count_torn_reads(store, rounds=60) == 0

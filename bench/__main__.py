@@ -45,7 +45,7 @@ SCALES = {
         readers=100,
         kills=60,
         publish_rate=300.0,
-        probe_every=60,
+        probe_every=150,
         seal_size=2_000,
     ),
 }

@@ -43,7 +43,13 @@ from indexpulse.ingest.changelog import ChangelogPublisher, ensure_topic
 from indexpulse.search import Searcher
 from indexpulse.store import DocumentStore
 
-PROBE_TIMEOUT = 90.0
+# A revision that is not searchable within this long is not late, it is
+# lost, and waiting longer only ties up a prober that the next probe needs.
+PROBE_TIMEOUT = 30.0
+# How long a probe may sit waiting for a free prober and still measure the
+# index rather than the queue in front of it.
+PROBE_START_GRACE = 2.0
+PROBERS = 8
 
 
 @dataclass(frozen=True)
@@ -82,6 +88,7 @@ class Collected:
     freshness: list[dict[str, object]] = field(default_factory=list)
     kills: list[dict[str, object]] = field(default_factory=list)
     published: int = 0
+    achieved_rate: float = 0.0
     torn_manifest_reads: int = 0
     missing_segment_reads: int = 0
 
@@ -92,12 +99,13 @@ class BenchRun:
         self.collected = Collected()
         self.stop = threading.Event()
         self.publishing_done = threading.Event()
-        self.probe_queue: queue.Queue[Revision] = queue.Queue(maxsize=4096)
+        self.probe_queue: queue.Queue[Revision] = queue.Queue(maxsize=PROBERS * 4)
         self.basis = topic_basis(spec.dim)
         self.searcher: Searcher | None = None
         self._reader_records: list[list[dict[str, object]]] = []
         self._probe_records: list[dict[str, object]] = []
         self._probe_lock = threading.Lock()
+        self._probes_dropped = 0
 
     # Setup ------------------------------------------------------------------
 
@@ -165,8 +173,10 @@ class BenchRun:
                 if sent.content and count % spec.probe_every == 0:
                     # Dropped rather than blocking the publisher behind the
                     # probers, which would distort the rate being measured.
-                    with contextlib.suppress(queue.Full):
+                    try:
                         self.probe_queue.put_nowait(sent)
+                    except queue.Full:
+                        self._probes_dropped += 1
 
                 target = started + count / spec.publish_rate
                 drift = target - time.time()
@@ -174,6 +184,10 @@ class BenchRun:
                     time.sleep(drift)
         publisher.flush()
         self.collected.published = count
+        # Recorded rather than assumed: a hundred reader threads in this
+        # process can keep the publisher off the CPU, and a run that did
+        # not reach its target rate has not tested that rate.
+        self.collected.achieved_rate = count / max(time.time() - started, 1e-9)
         self.publishing_done.set()
 
     def _refresh(self) -> None:
@@ -214,12 +228,24 @@ class BenchRun:
 
         Queried with the document's own new vector, so the probe asks exactly
         what the claim promises: is this page findable at what it now says.
+
+        A probe that waited for a free prober before it began cannot answer
+        that question. Its wall clock includes the wait, and charging that to
+        the index is how the first full run reported a freshness p95 of 86
+        seconds while the index was in fact a second behind. Those are recorded
+        as `late_start` and kept out of the percentiles rather than dropped
+        silently, because how many there were is the thing that says whether
+        the rest can be believed.
         """
         assert self.searcher is not None
         while not self.stop.is_set():
             try:
                 revision = self.probe_queue.get(timeout=0.5)
             except queue.Empty:
+                continue
+            started_at = time.time()
+            if started_at - revision.published_at > PROBE_START_GRACE:
+                self._record_probe(revision, None, "late_start", started_at)
                 continue
             query = content_vector(revision.content, self.spec.dim, self.basis)
             deadline = revision.published_at + PROBE_TIMEOUT
@@ -239,17 +265,23 @@ class BenchRun:
                     outcome = "superseded"
                     break
                 time.sleep(0.05)
-            delay = None if visible_at is None else round(visible_at - revision.published_at, 4)
-            record: dict[str, object] = {
-                "doc_id": revision.doc_id,
-                "version": revision.version,
-                "published_at": revision.published_at,
-                "visible_at": visible_at,
-                "outcome": outcome,
-                "seconds": delay,
-            }
-            with self._probe_lock:
-                self._probe_records.append(record)
+            self._record_probe(revision, visible_at, outcome, started_at)
+
+    def _record_probe(
+        self, revision: Revision, visible_at: float | None, outcome: str, started_at: float
+    ) -> None:
+        delay = None if visible_at is None else round(visible_at - revision.published_at, 4)
+        record: dict[str, object] = {
+            "doc_id": revision.doc_id,
+            "version": revision.version,
+            "published_at": revision.published_at,
+            "started_at": round(started_at - revision.published_at, 4),
+            "visible_at": visible_at,
+            "outcome": outcome,
+            "seconds": delay,
+        }
+        with self._probe_lock:
+            self._probe_records.append(record)
 
     def _spawn_worker(self) -> subprocess.Popen[bytes]:
         spec = self.spec
@@ -322,7 +354,7 @@ class BenchRun:
             threading.Thread(target=self._read, args=(slot,), daemon=True)
             for slot in range(spec.readers)
         ]
-        threads += [threading.Thread(target=self._probe, daemon=True) for _ in range(4)]
+        threads += [threading.Thread(target=self._probe, daemon=True) for _ in range(PROBERS)]
         publisher = threading.Thread(target=self._publish, daemon=True)
         chaos = threading.Thread(target=self._chaos, daemon=True)
 
@@ -397,6 +429,9 @@ class BenchRun:
                     "missing_segment_reads": self.collected.missing_segment_reads,
                     "queries": len(served),
                     "probes": len(self._probe_records),
+                    "probes_dropped_unqueued": self._probes_dropped,
+                    "publish_rate_target": self.spec.publish_rate,
+                    "publish_rate_achieved": round(self.collected.achieved_rate, 1),
                 },
                 indent=2,
             )

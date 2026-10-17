@@ -166,10 +166,13 @@ def audit(run_dir: Path) -> dict[str, Any]:
         else:
             idle.append(latency)
 
+    # Only probes that began within the grace period measure the index. One
+    # that waited for a free prober measures the queue in front of it, and
+    # folding those in is what made the first full run report 86 seconds.
     probes = [
         float(record["seconds"])
         for record in read_gz(run_dir / "freshness.jsonl.gz")
-        if record.get("seconds") is not None
+        if record.get("outcome") == "visible"
     ]
     outcomes: dict[str, int] = {}
     for record in read_gz(run_dir / "freshness.jsonl.gz"):
@@ -204,6 +207,9 @@ def audit(run_dir: Path) -> dict[str, Any]:
         "live_documents": lost["live_documents"],
         "freshness_seconds": percentiles(probes),
         "probe_outcomes": outcomes,
+        "probes_dropped_unqueued": run.get("probes_dropped_unqueued", 0),
+        "publish_rate_target": run.get("publish_rate_target"),
+        "publish_rate_achieved": run.get("publish_rate_achieved"),
         "lookup_ms_during_compaction": percentiles(during),
         "lookup_ms_idle": percentiles(idle),
         "compactions": len(windows),

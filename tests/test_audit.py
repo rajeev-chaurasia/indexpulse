@@ -14,6 +14,7 @@ from pathlib import Path
 from bench.audit import (
     STALENESS_TOLERANCE,
     Timeline,
+    audit,
     compaction_windows,
     grade_staleness,
     inside,
@@ -135,3 +136,64 @@ def test_compaction_windows_span_backwards_from_the_event(tmp_path: Path) -> Non
     assert inside(windows, BASE + 80.0) is True
     assert inside(windows, BASE + 50.0) is False
     assert inside(windows, BASE + 120.0) is False
+
+
+def minimal_run(tmp_path: Path, freshness: list[dict[str, object]]) -> Path:
+    run = tmp_path / "run"
+    run.mkdir()
+    write(run / "revisions.jsonl.gz", [])
+    write(run / "served.jsonl.gz", [])
+    write(run / "freshness.jsonl.gz", freshness)
+    write(run / "kills.jsonl.gz", [])
+    write(run / "worker-events.jsonl.gz", [])
+    (run / "lost.json").write_text(json.dumps({"lost_revisions": 0, "live_documents": 1}))
+    (run / "run.json").write_text(
+        json.dumps(
+            {
+                "name": "t",
+                "defences_disabled": [],
+                "documents": 1,
+                "revisions_published": 0,
+                "kills": 0,
+                "readers": 1,
+                "queries": 0,
+                "torn_manifest_reads": 0,
+                "missing_segment_reads": 0,
+            }
+        )
+    )
+    return run
+
+
+def probe(outcome: str, seconds: float | None) -> dict[str, object]:
+    return {"doc_id": 1, "version": 2, "outcome": outcome, "seconds": seconds}
+
+
+def test_a_probe_that_waited_for_a_prober_is_not_freshness(tmp_path: Path) -> None:
+    """The bug that made the first full run report 86 seconds.
+
+    A probe queued behind busy probers carries that wait in its wall clock.
+    Counting it measures the harness, so it is excluded and reported on its own.
+    """
+    run = minimal_run(
+        tmp_path,
+        [probe("visible", 1.0), probe("visible", 2.0), probe("late_start", None)],
+    )
+    summary = audit(run)
+    assert summary["freshness_seconds"]["count"] == 2
+    assert summary["freshness_seconds"]["max"] == 2.0
+    assert summary["probe_outcomes"]["late_start"] == 1
+
+
+def test_a_timed_out_probe_is_counted_but_not_averaged(tmp_path: Path) -> None:
+    run = minimal_run(tmp_path, [probe("visible", 1.0), probe("timeout", None)])
+    summary = audit(run)
+    assert summary["freshness_seconds"]["count"] == 1
+    assert summary["probe_outcomes"]["timeout"] == 1
+
+
+def test_a_superseded_probe_is_not_a_freshness_failure(tmp_path: Path) -> None:
+    run = minimal_run(tmp_path, [probe("visible", 1.0), probe("superseded", None)])
+    summary = audit(run)
+    assert summary["freshness_seconds"]["count"] == 1
+    assert summary["probe_outcomes"]["superseded"] == 1

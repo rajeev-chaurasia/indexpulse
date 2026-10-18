@@ -16,4 +16,9 @@ for defence in visibility offsets swap; do
   uv run python -m bench --scale full --unsafe "$defence"
 done
 
+# A second regime at a rate the worker sustains without queueing, so the
+# freshness figure can be read apart from the load that produced it.
+uv run python -m bench --scale full --publish-rate 100 --revisions 60000 \
+  --name full-safe-unsaturated
+
 uv run python script/validate_evidence.py

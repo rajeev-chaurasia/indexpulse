@@ -138,10 +138,14 @@ def test_compaction_windows_span_backwards_from_the_event(tmp_path: Path) -> Non
     assert inside(windows, BASE + 120.0) is False
 
 
-def minimal_run(tmp_path: Path, freshness: list[dict[str, object]]) -> Path:
+def minimal_run(
+    tmp_path: Path,
+    freshness: list[dict[str, object]],
+    revisions: list[dict[str, object]] | None = None,
+) -> Path:
     run = tmp_path / "run"
     run.mkdir()
-    write(run / "revisions.jsonl.gz", [])
+    write(run / "revisions.jsonl.gz", revisions or [])
     write(run / "served.jsonl.gz", [])
     write(run / "freshness.jsonl.gz", freshness)
     write(run / "kills.jsonl.gz", [])
@@ -165,8 +169,14 @@ def minimal_run(tmp_path: Path, freshness: list[dict[str, object]]) -> Path:
     return run
 
 
-def probe(outcome: str, seconds: float | None) -> dict[str, object]:
-    return {"doc_id": 1, "version": 2, "outcome": outcome, "seconds": seconds}
+def probe(outcome: str, seconds: float | None, doc_id: int = 1) -> dict[str, object]:
+    return {
+        "doc_id": doc_id,
+        "version": 2,
+        "published_at": BASE,
+        "outcome": outcome,
+        "seconds": seconds,
+    }
 
 
 def test_a_probe_that_waited_for_a_prober_is_not_freshness(tmp_path: Path) -> None:
@@ -197,3 +207,38 @@ def test_a_superseded_probe_is_not_a_freshness_failure(tmp_path: Path) -> None:
     summary = audit(run)
     assert summary["freshness_seconds"]["count"] == 1
     assert summary["probe_outcomes"]["superseded"] == 1
+
+
+def test_a_timeout_the_changelog_explains_is_reclassified(tmp_path: Path) -> None:
+    """A page deleted while the prober watched never comes back, correctly.
+
+    From where the prober stands that is indistinguishable from a failure, so
+    the changelog settles it afterwards rather than leaving a correct delete
+    counted as a missed revision.
+    """
+    run = minimal_run(
+        tmp_path,
+        [probe("timeout", None)],
+        revisions=[{"doc_id": 1, "version": 3, "operation": "delete", "published_at": BASE + 2.0}],
+    )
+    summary = audit(run)
+    assert summary["probe_outcomes"] == {"superseded": 1}
+
+
+def test_a_timeout_the_changelog_cannot_explain_stands(tmp_path: Path) -> None:
+    run = minimal_run(tmp_path, [probe("timeout", None)], revisions=[])
+    summary = audit(run)
+    assert summary["probe_outcomes"] == {"timeout": 1}
+
+
+def test_a_later_revision_outside_the_probe_window_does_not_excuse_it(tmp_path: Path) -> None:
+    """Credited only if it landed while the prober was still looking."""
+    run = minimal_run(
+        tmp_path,
+        [probe("timeout", None)],
+        revisions=[
+            {"doc_id": 1, "version": 3, "operation": "upsert", "published_at": BASE + 500.0}
+        ],
+    )
+    summary = audit(run)
+    assert summary["probe_outcomes"] == {"timeout": 1}

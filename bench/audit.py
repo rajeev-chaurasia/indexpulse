@@ -23,6 +23,9 @@ import numpy as np
 # be serving old content once the lag it is allowed has passed.
 STALENESS_TOLERANCE = 12.0
 BASE_VERSION = 1
+# Matches the prober's own timeout, so a revision that superseded the one
+# being watched is only credited if it landed while the prober was looking.
+PROBE_WINDOW = 30.0
 
 
 def read_gz(path: Path) -> Iterator[dict[str, Any]]:
@@ -118,6 +121,29 @@ def grade_staleness(served: Path, timeline: Timeline, tolerance: float) -> Stale
     )
 
 
+def settle_outcome(record: dict[str, Any], timeline: Timeline, window: float) -> str:
+    """Correct a timeout the prober had no way to classify.
+
+    A prober watches for one version of one document. If the page is deleted
+    while it waits, the document leaves the results entirely and never comes
+    back, which is correct behaviour and looks identical to a failure from
+    where the prober stands. The changelog knows the difference, so the
+    reclassification happens here rather than being counted as a miss.
+    """
+    outcome = str(record.get("outcome", "timeout"))
+    if outcome != "timeout":
+        return outcome
+    doc_id = int(record["doc_id"])
+    version = int(record["version"])
+    published = float(record["published_at"])
+    versions = timeline.versions.get(doc_id, [])
+    times = timeline.times.get(doc_id, [])
+    for later, at in zip(versions, times, strict=True):
+        if later > version and at <= published + window:
+            return "superseded"
+    return "timeout"
+
+
 def percentiles(values: list[float]) -> dict[str, float]:
     if not values:
         return {"count": 0}
@@ -176,7 +202,7 @@ def audit(run_dir: Path) -> dict[str, Any]:
     ]
     outcomes: dict[str, int] = {}
     for record in read_gz(run_dir / "freshness.jsonl.gz"):
-        outcome = str(record.get("outcome", "visible" if record.get("seconds") else "timeout"))
+        outcome = settle_outcome(record, timeline, PROBE_WINDOW)
         outcomes[outcome] = outcomes.get(outcome, 0) + 1
 
     run = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))

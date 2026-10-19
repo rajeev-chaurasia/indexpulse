@@ -172,6 +172,103 @@ serving old content once the lag it is allowed has passed. The strictest
 reading, a tolerance of zero, is published alongside it; hits that fail only
 there were served while the edit was still in flight, which the claim permits.
 
+## Results
+
+One run of each configuration, on one laptop, against 1,200,000 generated pages
+with 180,000 revisions published to the changelog at 300 per second while 100
+reader threads queried the index and the ingest worker was killed 60 times.
+Every number below is recomputed from the raw records in `evidence/` by
+[`script/validate_evidence.py`](script/validate_evidence.py) in CI, so editing a
+summary to say something nicer fails the build.
+
+### The claim
+
+| threshold, fixed in PLAN.md before the run | committed | measured | |
+| --- | ---: | ---: | --- |
+| stale versions served | 0 | **0** | held |
+| deleted documents served | 0 | **0** | held |
+| revisions lost | 0 | **0** | held |
+| hits blocked by the visibility rule | at least 4,000 | **145,687** | held |
+| update-to-search freshness, p95 | at most 12 s | **3.80 s** | held |
+| vector lookup under compaction, p95 | at most 240 ms | **96 ms** | held |
+| injected worker failures survived | 60 | **60** | held |
+
+Measured over 61,864 queries and 618,640 served hits, against 1,178,367 live
+documents after deletes.
+
+The strict reading, with the tolerance set to zero, counts 105 superseded and 15
+deleted hits. Those were served while the edit was still travelling from the
+changelog to the index, which the claim permits and the twelve second tolerance
+exists to express. They are published here rather than folded into the headline
+count or left out.
+
+### The controls
+
+The zeros above mean nothing on their own, because an audit that cannot detect
+staleness reports none on a broken index just as happily. Same corpus, same
+queries, same kill schedule, same grading code, one defence removed:
+
+| run | stale served | deleted served | revisions lost | torn manifest reads |
+| --- | ---: | ---: | ---: | ---: |
+| safe | 0 | 0 | 0 | 0 |
+| `--unsafe visibility` | **28,147** | **5,422** | 0 | 0 |
+| `--unsafe offsets` | 0 | 0 | **5,434** | 0 |
+| `--unsafe swap` | 0 | 0 | 0 | **18** |
+
+Each defence breaks the thing it was put there for, and nothing else. The
+visibility rule is the only one holding stale content out of results. Recording
+the changelog position before the segment is durable is the only one that loses
+revisions. The atomic rename is the only one that keeps a reader from meeting a
+half-written manifest.
+
+Removing the atomic swap is the mildest of the three, and the reason is worth
+stating: a torn manifest is detected when it is parsed, so the searcher declines
+the generation rather than acting on a partial segment list. The cost is an
+update the reader does not pick up, not a wrong answer. That is layering working
+as intended, and it is also why a run of minutes can miss the race entirely.
+`tests/test_manifest.py` pins it independently, reading a manifest continuously
+while it is republished: roughly seven thousand torn reads per trial without the
+rename, exactly zero with it.
+
+### What it costs
+
+| | p50 | p95 | p99 | max |
+| --- | ---: | ---: | ---: | ---: |
+| freshness, publish to searchable | 0.81 s | 3.80 s | 5.87 s | 7.93 s |
+| lookup, no compaction running | 2.9 ms | 46 ms | 215 ms | 686 ms |
+| lookup, during compaction | 6.1 ms | 96 ms | **959 ms** | **2,084 ms** |
+
+The committed threshold was on p95 and it holds with room to spare. The p99
+under compaction does not read nearly as well, and it is the number to argue
+with: at the ninety-ninth percentile a query during a compaction takes most of a
+second, and the worst one took two. A single laptop merging a 1.2 million vector
+segment while a hundred threads read it is not a configuration anybody should
+run, and the tail says so.
+
+That tail also varies more between runs than the design should allow. The same
+measurement in the three control runs gives p99 under compaction of 97 ms,
+110 ms and 211 ms, against 959 ms here, on identical settings. Some of that is a
+laptop doing other things. None of it is explained, and
+[docs/known-misses.md](docs/known-misses.md) says so rather than averaging it
+away.
+
+### What went wrong first
+
+The first full run reported a freshness p95 of 86 seconds against a 12 second
+threshold, and the obvious explanations were both wrong: compaction accounted
+for 8% of the run and worker restarts for 11%. The cause was the measurement.
+Probes were queued behind four threads that each waited up to 90 seconds on
+probes that could never resolve, and the wait was being charged to the index.
+Latency grew with position in the run, from a p50 of 0.77 s in the first quarter
+to 84 s in the third, which is a queue filling rather than an index degrading.
+
+Probes now record when they started, anything that waited more than two seconds
+for a prober is excluded and counted as `late_start`, and the auditor settles a
+timeout the prober could not classify by checking whether the changelog deleted
+the page while it watched. The run above has 9 `late_start` probes out of 1,034.
+The commit that fixed it names the defect, and this paragraph stays because a
+repository that only shows its corrected numbers is hiding the more useful half.
+
 ## Running it
 
 ```bash

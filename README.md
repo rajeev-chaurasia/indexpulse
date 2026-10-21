@@ -109,18 +109,14 @@ The ordering inside the worker is the entire crash-safety argument, and every
 other arrangement of these steps is wrong:
 
 ```mermaid
-flowchart LR
-    s1["1. Apply revisions<br/>to the store"] --> s2["2. Write the segment,<br/>complete, on disk"]
-    s2 --> s3["3. Publish the manifest<br/>naming it, and the<br/>position past it"]
-    s3 --> s4["4. Durable"]
+flowchart TB
+    s1["1. Apply the revisions<br/>to the document store"] --> s2["2. Write the segment,<br/>complete, on disk"]
+    s2 --> s3["3. Publish a manifest naming it,<br/>and the position past it"]
+    s3 --> s4["4. The batch is durable"]
 
-    k1["Killed here:<br/>position unchanged,<br/>batch read again,<br/>store ignores the<br/>versions it has"]
-    k2["Killed here:<br/>segment is litter,<br/>nothing names it,<br/>batch read again"]
-    k3["Killed here:<br/>batch is in the index<br/>and the position<br/>is past it"]
-
-    s1 -.-> k1
-    s2 -.-> k2
-    s3 -.-> k3
+    s1 -.-> k1["Killed here: the position is unchanged,<br/>so the batch is read again and the store<br/>ignores versions it already holds"]
+    s2 -.-> k2["Killed here: the segment is litter,<br/>nothing names it, the batch is read again"]
+    s3 -.-> k3["Killed here: the batch is in the index<br/>and the position has moved past it"]
 
     classDef step fill:#dcfce7,stroke:#16a34a,color:#14532d
     classDef kill fill:#fee2e2,stroke:#dc2626,color:#7f1d1d

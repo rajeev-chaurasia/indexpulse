@@ -33,7 +33,7 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy
       - run: ruby script/check_prose.rb
-      - run: uv run python script/check_layers.py
+      - run: uv run python -m script.check_layers
       - run: uv run pytest --cov --cov-report=term-missing
 
       # The whole path, broker to audit, at a scale that fits in a CI minute.
@@ -42,4 +42,4 @@ jobs:
 
       # Recomputes every published number from the raw records beside it. The
       # slowest step, and the one the README depends on.
-      - run: uv run python script/validate_evidence.py
+      - run: uv run python -m script.validate_evidence

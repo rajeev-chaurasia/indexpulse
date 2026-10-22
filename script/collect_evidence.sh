@@ -21,4 +21,4 @@ done
 uv run python -m bench --scale full --publish-rate 100 --revisions 60000 \
   --name full-safe-unsaturated
 
-uv run python script/validate_evidence.py
+uv run python -m script.validate_evidence

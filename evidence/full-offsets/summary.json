@@ -1,0 +1,60 @@
+{
+  "name": "full-offsets",
+  "defences_disabled": [
+    "offsets"
+  ],
+  "documents": 1200000,
+  "revisions_published": 180000,
+  "kills": 60,
+  "readers": 100,
+  "queries": 61981,
+  "hits_checked": 619810,
+  "staleness": {
+    "tolerance_seconds": 12.0,
+    "stale_hits": 0,
+    "deleted_hits": 0,
+    "examples": []
+  },
+  "staleness_strict": {
+    "tolerance_seconds": 0.0,
+    "stale_hits": 62,
+    "deleted_hits": 6
+  },
+  "blocked_by_visibility_rule": 142260,
+  "lost_revisions": 5434,
+  "live_documents": 1178367,
+  "freshness_seconds": {
+    "count": 948,
+    "p50": 0.715,
+    "p95": 2.401,
+    "p99": 3.576,
+    "max": 4.378
+  },
+  "probe_outcomes": {
+    "visible": 948,
+    "timeout": 41,
+    "superseded": 6,
+    "late_start": 36
+  },
+  "probes_dropped_unqueued": 3,
+  "publish_rate_target": 300.0,
+  "publish_rate_achieved": 300.0,
+  "lookup_ms_during_compaction": {
+    "count": 8238,
+    "p50": 7.857,
+    "p95": 59.921,
+    "p99": 96.976,
+    "max": 198.519
+  },
+  "lookup_ms_idle": {
+    "count": 53743,
+    "p50": 2.548,
+    "p95": 10.963,
+    "p99": 62.795,
+    "max": 708.141
+  },
+  "compactions": 63,
+  "torn_manifest_reads": 0,
+  "missing_segment_reads": 0,
+  "wall_seconds": 848.8
+}

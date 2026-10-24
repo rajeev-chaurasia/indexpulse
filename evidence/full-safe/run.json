@@ -1,0 +1,15 @@
+{
+  "name": "full-safe",
+  "documents": 1200000,
+  "revisions_published": 180000,
+  "readers": 100,
+  "kills": 60,
+  "defences_disabled": [],
+  "torn_manifest_reads": 0,
+  "missing_segment_reads": 0,
+  "queries": 61864,
+  "probes": 1034,
+  "probes_dropped_unqueued": 0,
+  "publish_rate_target": 300.0,
+  "publish_rate_achieved": 300.0
+}

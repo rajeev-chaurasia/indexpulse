@@ -1,0 +1,207 @@
+{
+  "live_documents": 1178367,
+  "indexed_versions": 1308254,
+  "lost_revisions": 5434,
+  "examples": [
+    {
+      "doc_id": 70,
+      "version": 5
+    },
+    {
+      "doc_id": 88,
+      "version": 7
+    },
+    {
+      "doc_id": 178,
+      "version": 7
+    },
+    {
+      "doc_id": 208,
+      "version": 9
+    },
+    {
+      "doc_id": 342,
+      "version": 7
+    },
+    {
+      "doc_id": 367,
+      "version": 4
+    },
+    {
+      "doc_id": 392,
+      "version": 4
+    },
+    {
+      "doc_id": 393,
+      "version": 5
+    },
+    {
+      "doc_id": 457,
+      "version": 5
+    },
+    {
+      "doc_id": 518,
+      "version": 10
+    },
+    {
+      "doc_id": 521,
+      "version": 6
+    },
+    {
+      "doc_id": 555,
+      "version": 12
+    },
+    {
+      "doc_id": 595,
+      "version": 6
+    },
+    {
+      "doc_id": 606,
+      "version": 13
+    },
+    {
+      "doc_id": 651,
+      "version": 2
+    },
+    {
+      "doc_id": 675,
+      "version": 5
+    },
+    {
+      "doc_id": 817,
+      "version": 8
+    },
+    {
+      "doc_id": 827,
+      "version": 5
+    },
+    {
+      "doc_id": 832,
+      "version": 8
+    },
+    {
+      "doc_id": 883,
+      "version": 5
+    },
+    {
+      "doc_id": 889,
+      "version": 9
+    },
+    {
+      "doc_id": 893,
+      "version": 6
+    },
+    {
+      "doc_id": 910,
+      "version": 4
+    },
+    {
+      "doc_id": 916,
+      "version": 4
+    },
+    {
+      "doc_id": 922,
+      "version": 11
+    },
+    {
+      "doc_id": 941,
+      "version": 4
+    },
+    {
+      "doc_id": 958,
+      "version": 3
+    },
+    {
+      "doc_id": 981,
+      "version": 9
+    },
+    {
+      "doc_id": 1004,
+      "version": 6
+    },
+    {
+      "doc_id": 1013,
+      "version": 6
+    },
+    {
+      "doc_id": 1028,
+      "version": 8
+    },
+    {
+      "doc_id": 1044,
+      "version": 3
+    },
+    {
+      "doc_id": 1078,
+      "version": 4
+    },
+    {
+      "doc_id": 1176,
+      "version": 5
+    },
+    {
+      "doc_id": 1178,
+      "version": 7
+    },
+    {
+      "doc_id": 1188,
+      "version": 8
+    },
+    {
+      "doc_id": 1202,
+      "version": 8
+    },
+    {
+      "doc_id": 1309,
+      "version": 5
+    },
+    {
+      "doc_id": 1339,
+      "version": 6
+    },
+    {
+      "doc_id": 1381,
+      "version": 6
+    },
+    {
+      "doc_id": 1386,
+      "version": 3
+    },
+    {
+      "doc_id": 1395,
+      "version": 13
+    },
+    {
+      "doc_id": 1415,
+      "version": 7
+    },
+    {
+      "doc_id": 1469,
+      "version": 7
+    },
+    {
+      "doc_id": 1505,
+      "version": 8
+    },
+    {
+      "doc_id": 1508,
+      "version": 10
+    },
+    {
+      "doc_id": 1524,
+      "version": 6
+    },
+    {
+      "doc_id": 1661,
+      "version": 8
+    },
+    {
+      "doc_id": 1663,
+      "version": 6
+    },
+    {
+      "doc_id": 1685,
+      "version": 10
+    }
+  ]
+}

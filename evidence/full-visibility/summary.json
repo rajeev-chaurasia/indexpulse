@@ -1,0 +1,409 @@
+{
+  "name": "full-visibility",
+  "defences_disabled": [
+    "visibility"
+  ],
+  "documents": 1200000,
+  "revisions_published": 180000,
+  "kills": 60,
+  "readers": 100,
+  "queries": 62015,
+  "hits_checked": 620150,
+  "staleness": {
+    "tolerance_seconds": 12.0,
+    "stale_hits": 28147,
+    "deleted_hits": 5422,
+    "examples": [
+      {
+        "doc_id": 11551,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690280.7004411
+      },
+      {
+        "doc_id": 4629,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690280.709329
+      },
+      {
+        "doc_id": 4695,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690281.718786
+      },
+      {
+        "doc_id": 7331,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690281.7303512
+      },
+      {
+        "doc_id": 13279,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": true,
+        "at": 1793690282.655515
+      },
+      {
+        "doc_id": 8825,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690283.66099
+      },
+      {
+        "doc_id": 257905,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690283.711499
+      },
+      {
+        "doc_id": 1147398,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": true,
+        "at": 1793690283.793289
+      },
+      {
+        "doc_id": 896977,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690283.810001
+      },
+      {
+        "doc_id": 388058,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690284.7813299
+      },
+      {
+        "doc_id": 72533,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": true,
+        "at": 1793690284.783434
+      },
+      {
+        "doc_id": 4186,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690285.7314959
+      },
+      {
+        "doc_id": 822870,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690285.733243
+      },
+      {
+        "doc_id": 764496,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690285.7452438
+      },
+      {
+        "doc_id": 97090,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690285.759516
+      },
+      {
+        "doc_id": 11030,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690285.8380868
+      },
+      {
+        "doc_id": 706516,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": true,
+        "at": 1793690286.813047
+      },
+      {
+        "doc_id": 268408,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690289.691636
+      },
+      {
+        "doc_id": 3961,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690289.738733
+      },
+      {
+        "doc_id": 785634,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": true,
+        "at": 1793690289.771112
+      },
+      {
+        "doc_id": 9889,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690289.821852
+      },
+      {
+        "doc_id": 932828,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690289.8288682
+      },
+      {
+        "doc_id": 775881,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690290.723103
+      },
+      {
+        "doc_id": 351768,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690290.7357912
+      },
+      {
+        "doc_id": 11535,
+        "served_version": 1,
+        "required_version": 3,
+        "deleted": false,
+        "at": 1793690290.735863
+      },
+      {
+        "doc_id": 443532,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690290.745048
+      },
+      {
+        "doc_id": 1430,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690290.822568
+      },
+      {
+        "doc_id": 904,
+        "served_version": 2,
+        "required_version": 3,
+        "deleted": false,
+        "at": 1793690290.868483
+      },
+      {
+        "doc_id": 819265,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690290.901707
+      },
+      {
+        "doc_id": 667590,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690291.828154
+      },
+      {
+        "doc_id": 97090,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690291.828563
+      },
+      {
+        "doc_id": 838868,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690291.8381639
+      },
+      {
+        "doc_id": 11428,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690292.78606
+      },
+      {
+        "doc_id": 1799,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690292.868722
+      },
+      {
+        "doc_id": 8918,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690292.908918
+      },
+      {
+        "doc_id": 152735,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690292.909589
+      },
+      {
+        "doc_id": 937821,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": true,
+        "at": 1793690293.708124
+      },
+      {
+        "doc_id": 858011,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690293.765735
+      },
+      {
+        "doc_id": 753,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690293.820309
+      },
+      {
+        "doc_id": 1143008,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690293.8645718
+      },
+      {
+        "doc_id": 656051,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690293.918091
+      },
+      {
+        "doc_id": 995300,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690294.7429838
+      },
+      {
+        "doc_id": 486340,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690294.871259
+      },
+      {
+        "doc_id": 4737,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690295.698994
+      },
+      {
+        "doc_id": 391959,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690295.699143
+      },
+      {
+        "doc_id": 9205,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690295.7296882
+      },
+      {
+        "doc_id": 210357,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690295.8389828
+      },
+      {
+        "doc_id": 934025,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690295.845098
+      },
+      {
+        "doc_id": 844820,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690295.846118
+      },
+      {
+        "doc_id": 3135,
+        "served_version": 1,
+        "required_version": 2,
+        "deleted": false,
+        "at": 1793690296.793076
+      }
+    ]
+  },
+  "staleness_strict": {
+    "tolerance_seconds": 0.0,
+    "stale_hits": 30073,
+    "deleted_hits": 5762
+  },
+  "blocked_by_visibility_rule": 0,
+  "lost_revisions": 0,
+  "live_documents": 1178367,
+  "freshness_seconds": {
+    "count": 1032,
+    "p50": 0.822,
+    "p95": 3.712,
+    "p99": 5.248,
+    "max": 7.767
+  },
+  "probe_outcomes": {
+    "visible": 1032,
+    "late_start": 2
+  },
+  "probes_dropped_unqueued": 0,
+  "publish_rate_target": 300.0,
+  "publish_rate_achieved": 300.0,
+  "lookup_ms_during_compaction": {
+    "count": 8083,
+    "p50": 5.09,
+    "p95": 83.909,
+    "p99": 211.021,
+    "max": 513.696
+  },
+  "lookup_ms_idle": {
+    "count": 53932,
+    "p50": 2.385,
+    "p95": 25.995,
+    "p99": 117.592,
+    "max": 427.905
+  },
+  "compactions": 58,
+  "torn_manifest_reads": 0,
+  "missing_segment_reads": 0,
+  "wall_seconds": 793.1
+}

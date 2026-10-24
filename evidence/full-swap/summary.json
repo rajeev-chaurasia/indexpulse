@@ -1,0 +1,59 @@
+{
+  "name": "full-swap",
+  "defences_disabled": [
+    "swap"
+  ],
+  "documents": 1200000,
+  "revisions_published": 180000,
+  "kills": 60,
+  "readers": 100,
+  "queries": 62023,
+  "hits_checked": 620230,
+  "staleness": {
+    "tolerance_seconds": 12.0,
+    "stale_hits": 0,
+    "deleted_hits": 0,
+    "examples": []
+  },
+  "staleness_strict": {
+    "tolerance_seconds": 0.0,
+    "stale_hits": 96,
+    "deleted_hits": 15
+  },
+  "blocked_by_visibility_rule": 143931,
+  "lost_revisions": 0,
+  "live_documents": 1178367,
+  "freshness_seconds": {
+    "count": 1029,
+    "p50": 0.765,
+    "p95": 3.708,
+    "p99": 5.728,
+    "max": 7.272
+  },
+  "probe_outcomes": {
+    "visible": 1029,
+    "superseded": 1,
+    "late_start": 4
+  },
+  "probes_dropped_unqueued": 0,
+  "publish_rate_target": 300.0,
+  "publish_rate_achieved": 300.0,
+  "lookup_ms_during_compaction": {
+    "count": 9175,
+    "p50": 5.819,
+    "p95": 61.576,
+    "p99": 109.525,
+    "max": 329.631
+  },
+  "lookup_ms_idle": {
+    "count": 52848,
+    "p50": 2.638,
+    "p95": 21.376,
+    "p99": 167.679,
+    "max": 1376.157
+  },
+  "compactions": 59,
+  "torn_manifest_reads": 18,
+  "missing_segment_reads": 0,
+  "wall_seconds": 758.7
+}

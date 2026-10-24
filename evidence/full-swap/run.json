@@ -1,0 +1,17 @@
+{
+  "name": "full-swap",
+  "documents": 1200000,
+  "revisions_published": 180000,
+  "readers": 100,
+  "kills": 60,
+  "defences_disabled": [
+    "swap"
+  ],
+  "torn_manifest_reads": 18,
+  "missing_segment_reads": 0,
+  "queries": 62023,
+  "probes": 1034,
+  "probes_dropped_unqueued": 0,
+  "publish_rate_target": 300.0,
+  "publish_rate_achieved": 300.0
+}

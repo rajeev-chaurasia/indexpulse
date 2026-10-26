@@ -243,10 +243,36 @@ run, and the tail says so.
 
 That tail also varies more between runs than the design should allow. The same
 measurement in the three control runs gives p99 under compaction of 97 ms,
-110 ms and 211 ms, against 959 ms here, on identical settings. Some of that is a
-laptop doing other things. None of it is explained, and
+110 ms and 211 ms, against 959 ms here, on identical settings. The next section
+shows the write rate accounts for some of it, and nothing accounts for the rest.
 [docs/known-misses.md](docs/known-misses.md) says so rather than averaging it
 away.
+
+### A second regime
+
+The run above publishes at 300 revisions per second, which is close to what this
+machine will take. A second safe run at 100 per second, over 60,000 revisions
+and the same 1.2 million pages, separates what the index does from what the load
+does to it:
+
+| | 300 rev/s | 100 rev/s |
+| --- | ---: | ---: |
+| stale versions served | 0 | 0 |
+| revisions lost | 0 | 0 |
+| freshness p95 | 3.80 s | 1.92 s |
+| freshness max | 7.93 s | 2.92 s |
+| lookup under compaction, p99 | 959 ms | 199 ms |
+| lookup under compaction, max | 2,084 ms | 319 ms |
+
+The correctness claim is indifferent to the rate, which is the point of it. The
+latency tail is not: at a third of the write rate the worst query during a
+compaction is 319 ms rather than two seconds. So the tail in the first table is
+a statement about a saturated laptop, not about the design.
+
+That does not explain the spread between runs at the *same* rate, which remains
+97 ms, 110 ms, 211 ms and 959 ms at p99 across four runs configured identically.
+Load explains the difference between the two tables. Nothing here explains the
+difference within the first one.
 
 ### What went wrong first
 

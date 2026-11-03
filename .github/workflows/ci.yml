@@ -16,8 +16,10 @@ jobs:
       # -march=native by default. The built wheel then lands in the dependency
       # cache and is restored onto whatever runner comes next, which is not the
       # one it was compiled for: a run that restores it dies with an illegal
-      # instruction before the first test. Building portable costs nothing
-      # measurable and makes the cached artifact safe to move.
+      # instruction before the first test. Building without it gives up the
+      # vector instructions hnswlib would otherwise use, which costs search
+      # speed here and nowhere else: the published measurements were taken on
+      # one machine that compiled its own copy.
       HNSWLIB_NO_NATIVE: "1"
     steps:
       - uses: actions/checkout@v7
